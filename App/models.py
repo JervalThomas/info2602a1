@@ -67,36 +67,39 @@ class Pokemon(db.Model):
     attack = db.Column(db.Integer, nullable=False)
     defense = db.Column(db.Integer, nullable=False)
     hp = db.Column(db.Integer, nullable=False)
-    height = db.Column(db.Integer, nullable=False)
+    height = db.Column(db.Float, nullable=True)
+    weight = db.Column(db.Float, nullable=True)
     sp_attack = db.Column(db.Integer, nullable=False)
     sp_defense = db.Column(db.Integer, nullable=False)
     speed = db.Column(db.Integer, nullable=False)
     type1 = db.Column(db.String(50), nullable=False)
     type2 = db.Column(db.String(50))
 
-    def __init__(self, name, attack, defense, hp, height, sp_attack, sp_defense, speed, type1, type2=None):
+    def __init__(self, name, attack, defense, hp, height, sp_attack, sp_defense, speed, type1, type2=None, weight=None):
         self.name = name
         self.attack = attack
         self.defense = defense
         self.hp = hp
         self.height = height
+        self.weight = weight
         self.sp_attack = sp_attack
         self.sp_defense = sp_defense
         self.speed = speed
         self.type1 = type1
         self.type2 = type2
-        
+
     def get_json(self):
         return {
-            'id': self.id,
+            'pokemon_id': self.id,
             'name': self.name,
             'attack': self.attack,
             'defense': self.defense,
             'hp': self.hp,
             'height': self.height,
+            'weight': self.weight,
             'sp_attack': self.sp_attack,
             'sp_defense': self.sp_defense,
             'speed': self.speed,
             'type1': self.type1,
-            'type2': self.type2
+            'type2': self.type2,
         }

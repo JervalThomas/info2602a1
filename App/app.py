@@ -37,41 +37,64 @@ jwt = JWTManager(app)
 
 # Initializer Function to be used in both init command and /init route
 def initialize_db():
-  db.drop_all()
-  db.create_all()
+    db.drop_all()
+    db.create_all()
 
-  with open('pokemon.csv', newline='') as csvfile:
+    with open('pokemon.csv', newline='', encoding='utf-8') as csvfile:
         reader = csv.DictReader(csvfile)
         for row in reader:
-            # Check if 'height' key exists in the row
-            if 'height' in row:
-                height = int(row['height']) if row['height'] else None
-                type2 = row['type2'] if row['type2'] else None
-                pokemon = Pokemon(
-                    name=row['name'],
-                    attack=int(row['attack']),
-                    defense=int(row['defense']),
-                    hp=int(row['hp']),
-                    height=height,
-                    sp_attack=int(row['sp_attack']),
-                    sp_defense=int(row['sp_defense']),
-                    speed=int(row['speed']),
-                    type1=row['type1'],
-                    type2=type2
-                )
-                db.session.add(pokemon)
-  db.session.commit()
+            abilities = row['abilities']
+            attack = int(row['attack'])
+            defense = int(row['defense'])
+            hp = int(row['hp'])
+            height = float(row['height_m']) if row['height_m'] else None
+            sp_attack = int(row['sp_attack'])
+            sp_defense = int(row['sp_defense'])
+            speed = int(row['speed'])
+            type1 = row['type1']
+            type2 = row['type2'] if row['type2'] else None
+            name = row['name']
+            weight = float(row['weight_kg']) if row['weight_kg'] else None
+
+            pokemon = Pokemon(
+                name=name,
+                attack=attack,
+                defense=defense,
+                hp=hp,
+                height=height,
+                weight=weight,
+                sp_attack=sp_attack,
+                sp_defense=sp_defense,
+                speed=speed,
+                type1=type1,
+                type2=type2
+            )
+            db.session.add(pokemon)
+
+    db.session.commit()
+
 
 # ********** Routes **************
 @app.route('/')
 def index():
   return '<h1>Poke API v1.0</h1>'
 
-# GET List Pokemon route
-@app.route('/list-pokemon', methods=['GET'])
-def list_pokemon():
+# Initialize Database Route
+@app.route('/init', methods=['GET'])
+def init():
     initialize_db()
-    return jsonify({"message": "List of Pokemon"})
+    return jsonify({"message": "Database Initialized!"})
+
+# GET List Pokemon route
+@app.route('/pokemon', methods=['GET'])
+def list_pokemon():
+    all_pokemon = Pokemon.query.all()
+    
+    pokemon_list = []
+    for pokemon in all_pokemon:
+        pokemon_data = pokemon.get_json()
+        pokemon_list.append(pokemon_data)
+    return jsonify({"pokemon": pokemon_list})
 
 # POST Sign Up - Success route
 @app.route('/signup-success', methods=['POST'])
@@ -150,13 +173,6 @@ def delete_my_pokemon():
 def delete_my_pokemon_bad_id():
     # Add your logic here for deleting a user's Pokemon with a bad ID
     return jsonify({"message": "Bad ID"})
-
-# Initialize Database Route
-@app.route('/init', methods=['GET'])
-def init():
-    # Add your logic here to initialize the database
-    # For example, you could call the initialize_db() function
-    return jsonify({"message": "Database initialized"})
 
 if __name__ == "__main__":
   app.run(host='0.0.0.0', port=81)
