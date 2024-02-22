@@ -11,6 +11,7 @@ from flask_jwt_extended import (
     set_access_cookies,
     unset_jwt_cookies,
 )
+from werkzeug.exceptions import HTTPException
 
 from .models import db, User, UserPokemon, Pokemon
 
@@ -97,19 +98,27 @@ def list_pokemon():
     return jsonify({"pokemon": pokemon_list})
 
 # POST Sign Up - Success route
-@app.route('/signup-success', methods=['POST'])
-def signup_success():
-    # Add your logic here for successful signup
-    return jsonify({"message": "Sign Up successful"})
+@app.route('/signup', methods=['POST'])
+def signup():
+    user_data = request.json
+    username = user_data.get('username')
+    email = user_data.get('email')
 
-# POST Sign Up - Bad Username route
-@app.route('/signup-bad-username', methods=['POST'])
-def signup_bad_username():
-    # Add your logic here for signup with a bad username
-    return jsonify({"message": "Bad username"})
+    existing_username = User.query.filter_by(username=username).first()
+    existing_email = User.query.filter_by(email=email).first()
+    
+    if existing_username or existing_email:
+        return jsonify({"message": "Username or email already exists"}), 400
+
+    user = User(username=username, email=email, password=user_data.get('password'))
+    db.session.add(user)
+    db.session.commit()
+    
+    return jsonify({"message": f"{username} created"}), 201
+
 
 # POST Login - Bad ID route
-@app.route('/login-bad-id', methods=['POST'])
+@app.route('/login', methods=['POST'])
 def login_bad_id():
     # Add your logic here for login with a bad ID
     return jsonify({"message": "Bad ID"})
