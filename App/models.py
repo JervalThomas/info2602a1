@@ -7,7 +7,7 @@ class User(db.Model):
     username = db.Column(db.String(80), unique=True, nullable=False)
     email = db.Column(db.String(120), unique=True, nullable=False)
     password = db.Column(db.String(120), nullable=False)
-    user_pokemons = db.relationship('UserPokemon', backref='user', lazy=True)
+    # user_pokemons = db.relationship('UserPokemon', backref='user', lazy=True)
 
     def __init__(self, username, email, password):
         self.username = username
@@ -45,7 +45,7 @@ class User(db.Model):
 class UserPokemon(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
-    pokemon_id = db.Column(db.Integer, nullable=False)
+    pokemon_id = db.Column(db.Integer, db.ForeignKey('pokemon.id'), nullable=False)
     name = db.Column(db.String(100), nullable=False)
 
     def __init__(self, user_id, pokemon_id, name):

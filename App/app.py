@@ -97,7 +97,7 @@ def list_pokemon():
         pokemon_list.append(pokemon_data)
     return jsonify({"pokemon": pokemon_list})
 
-# POST Sign Up - Success route
+# POST Sign Up Route
 @app.route('/signup', methods=['POST'])
 def signup():
     user_data = request.json
@@ -117,23 +117,47 @@ def signup():
     return jsonify({"message": f"{username} created"}), 201
 
 
-# POST Login - Bad ID route
+# POST Login Route
 @app.route('/login', methods=['POST'])
-def login_bad_id():
-    # Add your logic here for login with a bad ID
-    return jsonify({"message": "Bad ID"})
+def login():
+    login_data = request.json
+    username = login_data.get('username')
+    password = login_data.get('password')
 
-# POST Login - Success route
-@app.route('/login-success', methods=['POST'])
-def login_success():
-    # Add your logic here for successful login
-    return jsonify({"message": "Login successful"})
+    # Example: Check if the username and password are correct
+    if username == 'example_user' and password == 'example_password':
+        return jsonify({"message": "Login successful"}), 200
+    else:
+        return jsonify({"message": "bad username/password given"}), 401
 
 # POST Save My Pokemon route
-@app.route('/save-my-pokemon', methods=['POST'])
+@app.route('/mypokemon', methods=['POST'])
 def save_my_pokemon():
-    # Add your logic here to save a Pokemon for a user
-    return jsonify({"message": "Pokemon saved successfully"})
+    pokemon_data = request.json
+    username = pokemon_data.get('name')  # Assuming username is provided in the request
+    pokemon_id = pokemon_data.get('pokemon_id')  # Assuming the ID of the Pokemon is provided
+
+    # Fetch the user based on the provided username
+    user = User.query.filter_by(username=username).first()
+    if not user:
+        return jsonify({"message": username, "User not found " : ""}), 404
+
+    # Check if the Pokemon exists
+    pokemon = Pokemon.query.get(pokemon_id)
+    if not pokemon:
+        return jsonify({"error": f"{pokemon_id} is not a valid pokemon id"}), 400
+
+    # Get the name of the Pokemon
+    pokemon_name = pokemon.name
+
+    # Save the captured Pokemon for the user
+    user_pokemon = UserPokemon(user_id=user.id, pokemon_id=pokemon_id, name=pokemon_name)
+    db.session.add(user_pokemon)
+    db.session.commit()
+
+    # Return the name and ID of the captured Pokemon in the response message
+    message = f"{pokemon_name} captured with id: {user_pokemon.id}"
+    return jsonify({"message": message, "id": user_pokemon.id, "name": pokemon_name}), 201
 
 # POST Save My Pokemon Bad ID route
 @app.route('/save-my-pokemon-bad-id', methods=['POST'])
