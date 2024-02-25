@@ -159,53 +159,78 @@ def save_my_pokemon():
     message = f"{pokemon_name} captured with id: {user_pokemon.id}"
     return jsonify({"message": message, "id": user_pokemon.id, "name": pokemon_name}), 201
 
-# POST Save My Pokemon Bad ID route
-@app.route('/save-my-pokemon-bad-id', methods=['POST'])
-def save_my_pokemon_bad_id():
-    # Add your logic here for saving a Pokemon with a bad ID
-    return jsonify({"message": "Bad ID"})
-
 # GET List My Pokemon route
-@app.route('/list-my-pokemon', methods=['GET'])
+@app.route('/mypokemon', methods=['GET'])
 def list_my_pokemon():
-    # Add your logic here to fetch and return a list of a user's Pokemon
-    return jsonify({"message": "List of My Pokemon"})
+    # Retrieve the username from the request body
+    request_data = request.json
+    username = request_data.get('name')
+
+    # Fetch the user based on the provided username
+    user = User.query.filter_by(username=username).first()
+    if not user:
+        return jsonify({"error": "User not found"}), 404
+
+    # Fetch the list of Pokemon associated with the user
+    user_pokemon = UserPokemon.query.filter_by(user_id=user.id).all()
+
+    # Convert the list of Pokemon objects to a JSON-compatible format
+    pokemon_list = []
+    for user_poke in user_pokemon:
+        # Fetch the corresponding Pokemon object
+        pokemon = Pokemon.query.get(user_poke.pokemon_id)
+        if not pokemon:
+            continue  # Skip if the corresponding Pokemon object is not found
+
+        pokemon_data = {
+            "id": pokemon.id,
+            "name": pokemon.name,
+            "species": pokemon.type1  # Assuming type1 is the species attribute
+        }
+        pokemon_list.append(pokemon_data)
+
+    # Return the list of Pokemon as a JSON response
+    return jsonify(pokemon_list)
 
 # GET Get My Pokemon Success route
-@app.route('/get-my-pokemon-success', methods=['GET'])
-def get_my_pokemon_success():
-    # Add your logic here for successfully getting a user's Pokemon
-    return jsonify({"message": "Get My Pokemon successful"})
+@app.route('/mypokemon/<int:user_id>', methods=['GET'])
+def get_my_pokemon(user_id):
+    # Assuming you retrieve user-specific Pokemon data from the UserPokemon table
+    user_pokemon_list = UserPokemon.query.filter_by(user_id=user_id).all()
+    if not user_pokemon_list:
+        return jsonify({"error": f"Id {user_id} is invalid or does not belong to the user"}), 401
 
-# GET Get My Pokemon - Bad ID route
-@app.route('/get-my-pokemon-bad-id', methods=['GET'])
-def get_my_pokemon_bad_id():
-    # Add your logic here for getting a user's Pokemon with a bad ID
-    return jsonify({"message": "Bad ID"})
+    # Convert the list of Pokemon objects to a JSON-compatible format
+    pokemon_list = []
+    for user_pokemon in user_pokemon_list:
+        # Fetch the corresponding Pokemon object
+        pokemon = Pokemon.query.get(user_pokemon.pokemon_id)
+        if not pokemon:
+            continue  # Skip if the corresponding Pokemon object is not found
+            
+        # Construct the JSON response for each user_pokemon
+        response_data = {
+            "id": user_pokemon.id,
+            "name": pokemon.name,  # Access name from the Pokemon object
+            "species": pokemon.type1  # Access type1 from the Pokemon object
+        }
+        pokemon_list.append(response_data)
+
+    return jsonify({"pokemon": pokemon_list})
 
 # PUT Update My Pokemon route
-@app.route('/update-my-pokemon', methods=['PUT'])
+@app.route('/mypokemon/1', methods=['PUT'])
 def update_my_pokemon():
     # Add your logic here to update a user's Pokemon
     return jsonify({"message": "Update My Pokemon successful"})
 
 # PUT Update My Pokemon - Bad ID route
-@app.route('/update-my-pokemon-bad-id', methods=['PUT'])
-def update_my_pokemon_bad_id():
-    # Add your logic here for updating a user's Pokemon with a bad ID
-    return jsonify({"message": "Bad ID"})
 
 # DELETE Delete My Pokemon route
 @app.route('/delete-my-pokemon', methods=['DELETE'])
 def delete_my_pokemon():
     # Add your logic here to delete a user's Pokemon
     return jsonify({"message": "Delete My Pokemon successful"})
-
-# DELETE Delete My Pokemon - Bad ID route
-@app.route('/delete-my-pokemon-bad-id', methods=['DELETE'])
-def delete_my_pokemon_bad_id():
-    # Add your logic here for deleting a user's Pokemon with a bad ID
-    return jsonify({"message": "Bad ID"})
 
 if __name__ == "__main__":
   app.run(host='0.0.0.0', port=81)
