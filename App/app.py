@@ -158,7 +158,7 @@ def save():
     data = request.json
     username = get_jwt_identity()
     user = User.query.filter_by(username=username).first()
-    captured = user.catch_pokemon(data['pokemon_id'], data['username'])   
+    captured = user.catch_pokemon(data['pokemon_id'], data['name'])
     if captured:
         return jsonify(message=f'{captured.name} captured with id: {captured.id}'), 201
   
@@ -167,7 +167,7 @@ def save():
 
 # GET List My Pokemon route
 @app.route('/mypokemon', methods=['GET'])
-@jwt_required()
+@login_required(User)
 def list_my_pokemon():
     username = get_jwt_identity()
     user = User.query.filter_by(username=username).first()
@@ -198,77 +198,53 @@ def get_my_pokemon(user_id):
     if not user_pokemon_list:
         return jsonify({"error": f"Id {user_id} is invalid or does not belong to the user"}), 401
 
-    pokemon_list = []
     for user_pokemon in user_pokemon_list:
         pokemon = Pokemon.query.get(user_pokemon.pokemon_id)
-        if not pokemon:
-            continue
-
-        response_data = {
-            "id": user_pokemon.id,
-            "name": pokemon.name,
-            "species": pokemon.type1
-        }
-        pokemon_list.append(response_data)
-
-    return jsonify({"pokemon": pokemon_list})
+        if pokemon:
+            response_data = {
+                "id": user_pokemon.id,
+                "name": pokemon.name,
+                "species": pokemon.type1
+            }
+        return jsonify(response_data)
 
 # PUT Update My Pokemon route
-@app.route('/mypokemon/<int:pokemon_id>', methods=['PUT'])
+@app.route('/mypokemon/<int:id>', methods=['PUT'])
 @login_required(User)
-def update_my_pokemon(pokemon_id):
+def update_my_pokemon(id):
     username = get_jwt_identity()
     user = User.query.filter_by(username=username).first()
-    if not user:
-        return jsonify({"error": "Unauthorized"}), 401
 
     data = request.json
-    user_pokemon = UserPokemon.query.filter_by(id=pokemon_id).first()
-    old_name = user_pokemon
-    new_name = data.get('name')
-    if not new_name:
-        return jsonify({"error": "New name is required"}), 400
-
-    # Ensure the provided pokemon_id is valid and belongs to the user
-    if not user_pokemon:
-        return jsonify({"error": f"Id {pokemon_id} is invalid or does not belong to {new_name}"}), 401
-
-    user.rename_pokemon(pokemon_id, new_name)
-    db.session.commit()
-
-    return jsonify({"message": f"Pokemon {old_name.name} renamed to {data['name']}"}), 200
-
-# username = get_jwt_identity()
-#     user = User.query.filter_by(username=username).first()
-#     data = request.json
-#     old_name = data['username']
-#     new_name = user.rename_pokemon(data['pokemon_id'], data['username'])
-#     if new_name:
-#         return jsonify({"message": f"{user.name} renamed to {new_name}"}), 200
+    user_pokemon = UserPokemon.query.get(id)
+    if not user_pokemon or user_pokemon.user_id != user.id:
+        return jsonify({"error": f"Id {id} is invalid or does not belong to {user.username}"}), 401
     
-#     return jsonify({"error": f"Id {pokemon_id} is invalid or does not belong to {new_name}"}), 401
+    old_name = user_pokemon.name
+    new_name = user.rename_pokemon(id, data['name'])
+    if new_name: 
+        return jsonify({"message": f"{user_pokemon.name} renamed to {new_name.name}"}), 200
 
-# PUT Update My Pokemon - Bad ID route
 
 # DELETE Delete My Pokemon route
-@app.route('/mypokemon/<int:pokemon_id>', methods=['DELETE'])
+@app.route('/mypokemon/<int:id>', methods=['DELETE'])
 @jwt_required()
-def delete_my_pokemon(pokemon_id):
+def delete_my_pokemon(id):
     username = get_jwt_identity()
     user = User.query.filter_by(username=username).first()
     if not user:
         return jsonify({"error": "Unauthorized"}), 401
 
     # Check if the UserPokemon object with the given ID exists and belongs to the user
-    user_pokemon = UserPokemon.query.filter_by(user_id=user.id, id=pokemon_id).first()
+    user_pokemon = UserPokemon.query.filter_by(user_id=user.id, id=id).first()
     if not user_pokemon:
-        return jsonify({"error": f"User Pokemon with ID {pokemon_id} not found or does not belong to the user"}), 404
+        return jsonify({"error": f"Id {id} is invalid or does not belong to {user.username}"}), 401
 
     # Delete the UserPokemon object from the database
-    db.session.delete(user_pokemon)
-    db.session.commit()
+    data = request.json
+    name = user.release_pokemon(id, data['name'])
 
-    return jsonify({"message": f"{user_pokemon.name} released"}), 200
+    return jsonify({"message": f"{name.name} released"}), 200
 
 if __name__ == "__main__":
   app.run(host='0.0.0.0', port=81)

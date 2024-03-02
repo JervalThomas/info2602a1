@@ -7,7 +7,7 @@ class User(db.Model):
     username = db.Column(db.String(80), unique=True, nullable=False)
     email = db.Column(db.String(120), unique=True, nullable=False)
     password = db.Column(db.String(120), nullable=False)
-    # user_pokemons = db.relationship('UserPokemon', backref='user', lazy=True)
+    # user_pokemon = db.relationship('UserPokemon', backref='user', lazy=True)
 
     def __init__(self, username, email, password):
         self.username = username
@@ -26,23 +26,29 @@ class User(db.Model):
         return f'<User {self.id} {self.username} - {self.email}>'
 
     def catch_pokemon(self, pokemon_id, name):
-        user_pokemon = UserPokemon(user_id=self.id, pokemon_id=pokemon_id, name=name)
-        db.session.add(user_pokemon)
-        db.session.commit()
-        return user_pokemon
+        pokemon = Pokemon.query.filter_by(id=pokemon_id).first()
+        if pokemon: 
+            user_pokemon = UserPokemon(user_id=self.id, pokemon_id=pokemon_id, name=name)
+            db.session.add(user_pokemon)
+            db.session.commit()
+            return user_pokemon
+        return None
 
     def release_pokemon(self, pokemon_id, name):
         user_pokemon = UserPokemon.query.filter_by(user_id=self.id, pokemon_id=pokemon_id, name=name).first()
         if user_pokemon:
             db.session.delete(user_pokemon)
             db.session.commit()
+        return user_pokemon
 
     def rename_pokemon(self, pokemon_id, name):
-        user_pokemon = UserPokemon.query.filter_by(user_id=self.id, pokemon_id=pokemon_id).first()
+        user_pokemon = UserPokemon.query.get(pokemon_id)
         if user_pokemon:
             user_pokemon.name = name
+            db.session.add(user_pokemon)
             db.session.commit()
-        return user_pokemon
+            return user_pokemon
+        return None
 
 class UserPokemon(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -77,8 +83,7 @@ class Pokemon(db.Model):
     type1 = db.Column(db.String(50), nullable=False)
     type2 = db.Column(db.String(50), nullable=True)
 
-    def __init__(self, pokemon_id, name, attack, defense, hp, height, sp_attack, sp_defense, speed, type1, type2=None, weight=None):
-        self.id = pokemon_id
+    def __init__(self, name, attack, defense, hp, height, sp_attack, sp_defense, speed, type1, type2=None, weight=None):
         self.name = name
         self.attack = attack
         self.defense = defense
