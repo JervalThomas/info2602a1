@@ -29,6 +29,7 @@ class User(db.Model):
         user_pokemon = UserPokemon(user_id=self.id, pokemon_id=pokemon_id, name=name)
         db.session.add(user_pokemon)
         db.session.commit()
+        return user_pokemon
 
     def release_pokemon(self, pokemon_id, name):
         user_pokemon = UserPokemon.query.filter_by(user_id=self.id, pokemon_id=pokemon_id, name=name).first()
@@ -41,6 +42,7 @@ class User(db.Model):
         if user_pokemon:
             user_pokemon.name = name
             db.session.commit()
+        return user_pokemon
 
 class UserPokemon(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -62,7 +64,7 @@ class UserPokemon(db.Model):
         }
 
 class Pokemon(db.Model):
-    id = db.Column(db.Integer, primary_key=True)
+    id = db.Column(db.Integer,nullable=False, primary_key=True)
     name = db.Column(db.String(100), nullable=False)
     attack = db.Column(db.Integer, nullable=False)
     defense = db.Column(db.Integer, nullable=False)
@@ -73,9 +75,10 @@ class Pokemon(db.Model):
     sp_defense = db.Column(db.Integer, nullable=False)
     speed = db.Column(db.Integer, nullable=False)
     type1 = db.Column(db.String(50), nullable=False)
-    type2 = db.Column(db.String(50))
+    type2 = db.Column(db.String(50), nullable=True)
 
-    def __init__(self, name, attack, defense, hp, height, sp_attack, sp_defense, speed, type1, type2=None, weight=None):
+    def __init__(self, pokemon_id, name, attack, defense, hp, height, sp_attack, sp_defense, speed, type1, type2=None, weight=None):
+        self.id = pokemon_id
         self.name = name
         self.attack = attack
         self.defense = defense
