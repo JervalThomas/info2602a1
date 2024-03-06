@@ -193,10 +193,14 @@ def list_my_pokemon():
 
 # GET Get My Pokemon Success route
 @app.route('/mypokemon/<int:user_id>', methods=['GET'])
+@login_required(User)
 def get_my_pokemon(user_id):
+    username = get_jwt_identity()
+    user = User.query.filter_by(username=username).first()
     user_pokemon_list = UserPokemon.query.filter_by(user_id=user_id).all()
     if not user_pokemon_list:
-        return jsonify({"error": f"Id {user_id} is invalid or does not belong to the user"}), 401
+        return jsonify({"error": f"Id {user_id} is invalid or does not belong to {username}"}), 401
+    
 
     for user_pokemon in user_pokemon_list:
         pokemon = Pokemon.query.get(user_pokemon.pokemon_id)
@@ -235,14 +239,11 @@ def delete_my_pokemon(id):
     if not user:
         return jsonify({"error": "Unauthorized"}), 401
 
-    # Check if the UserPokemon object with the given ID exists and belongs to the user
     user_pokemon = UserPokemon.query.filter_by(user_id=user.id, id=id).first()
     if not user_pokemon:
         return jsonify({"error": f"Id {id} is invalid or does not belong to {user.username}"}), 401
 
-    # Delete the UserPokemon object from the database
-    data = request.json
-    name = user.release_pokemon(id, data['name'])
+    name = user.release_pokemon(pokemon_id=id, name=user.username)
 
     return jsonify({"message": f"{name.name} released"}), 200
 
